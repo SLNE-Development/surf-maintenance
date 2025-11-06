@@ -1,0 +1,7 @@
+name: surf-maintenance-server
+main: 'dev.slne.surf.maintenance.server.PluginMain'
+bootstrapper: 'dev.slne.surf.maintenance.server.PluginBootstrap'
+version: 1.21.10-1.0.0-SNAPSHOT
+description: 'Maintenance Plugin'
+authors:
+  - 'red'

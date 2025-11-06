@@ -1,2 +1,2 @@
-# surf-cloud-plugin-template
+# surf-maintenance
 Template for surf-cloud applications
