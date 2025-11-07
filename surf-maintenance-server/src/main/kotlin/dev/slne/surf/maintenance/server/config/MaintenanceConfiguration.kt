@@ -1,6 +1,6 @@
-package dev.slne.surf.maintenance.velocity.config
+package dev.slne.surf.maintenance.server.config
 
-import dev.slne.surf.maintenance.velocity.plugin
+import dev.slne.surf.maintenance.server.plugin
 import dev.slne.surf.surfapi.core.api.config.manager.SpongeConfigManager
 import dev.slne.surf.surfapi.core.api.config.surfConfigApi
 
@@ -10,7 +10,7 @@ class MaintenanceConfiguration {
     init {
         surfConfigApi.createSpongeYmlConfig(
             MaintenanceConfig::class.java,
-            plugin.dataPath,
+            plugin.dataFolder,
             "config.yml"
         )
         configManager = surfConfigApi.getSpongeConfigManagerForConfig(

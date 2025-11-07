@@ -2,14 +2,19 @@
 
 package dev.slne.surf.maintenance.velocity.command
 
+import com.github.shynixn.mccoroutine.velocity.launch
 import dev.jorel.commandapi.kotlindsl.anyExecutor
 import dev.jorel.commandapi.kotlindsl.commandTree
+import dev.jorel.commandapi.kotlindsl.getValue
 import dev.jorel.commandapi.kotlindsl.literalArgument
+import dev.slne.surf.cloud.api.client.server.CloudClientServerManager
+import dev.slne.surf.cloud.api.client.velocity.command.args.cloudServerArgument
+import dev.slne.surf.cloud.api.client.velocity.command.args.cloudServerGroupArgument
+import dev.slne.surf.cloud.api.common.server.CloudServer
 import dev.slne.surf.maintenance.api.InternalMaintenanceApi
 import dev.slne.surf.maintenance.core.client.permission.MaintenancePermissions
-import dev.slne.surf.maintenance.velocity.config
+import dev.slne.surf.maintenance.velocity.maintenanceService
 import dev.slne.surf.maintenance.velocity.plugin
-import dev.slne.surf.maintenance.velocity.proxy
 import dev.slne.surf.surfapi.core.api.messages.CommonComponents
 import dev.slne.surf.surfapi.core.api.messages.adventure.buildText
 import dev.slne.surf.surfapi.core.api.messages.adventure.sendText
@@ -17,126 +22,217 @@ import java.util.*
 
 fun maintenanceCommand() = commandTree("maintenance") {
     withPermission(MaintenancePermissions.MAINTENANCE_COMMAND)
-    literalArgument("reload") {
-        anyExecutor { executor, _ ->
-            plugin.configuration.reload()
-
-            plugin.maintenanceMode = config.enabled
-
-            executor.sendText {
-                appendPrefix()
-                success("Die Konfiguration wurde neu geladen.")
-            }
-        }
-    }
     literalArgument("enable") {
-        anyExecutor { executor, _ ->
-            if (plugin.maintenanceMode) {
-                executor.sendText {
-                    appendPrefix()
-                    error("Der Wartungsmodus ist bereits aktiviert.")
-                }
-                return@anyExecutor
-            }
+        literalArgument("server") {
+            cloudServerArgument("cloudServer") {
+                anyExecutor { executor, args ->
+                    val cloudServer: CloudServer by args
 
-            plugin.maintenanceMode = true
-            plugin.configuration.edit {
-                enabled = true
-            }
+                    if (maintenanceService.isMaintenanceEnabled(cloudServer)) {
+                        executor.sendText {
+                            appendPrefix()
+                            error("Der Wartungsmodus ist bereits für den Server ${cloudServer.displayName} aktiviert.")
+                        }
+                        return@anyExecutor
+                    }
 
-            executor.sendText {
-                appendPrefix()
-                success("Der Wartungsmodus wurde aktiviert.")
-            }
-        }
+                    maintenanceService.setMaintenanceModeForServer(cloudServer, true)
 
-        literalArgument("--kick") {
-            anyExecutor { executor, _ ->
-                if (plugin.maintenanceMode) {
                     executor.sendText {
                         appendPrefix()
-                        error("Der Wartungsmodus ist bereits aktiviert.")
+                        success("Der Wartungsmodus wurde für den Server ")
+                        variableValue(cloudServer.displayName)
+                        success(" aktiviert.")
                     }
-                    return@anyExecutor
                 }
+            }
+        }
+        literalArgument("group") {
+            cloudServerGroupArgument("cloudServerGroup") {
+                anyExecutor { executor, args ->
+                    val cloudServerGroup: String by args
 
-                plugin.maintenanceMode = true
-                plugin.configuration.edit {
-                    enabled = true
-                }
+                    if (maintenanceService.isMaintenanceEnabled(cloudServerGroup)) {
+                        executor.sendText {
+                            appendPrefix()
+                            error("Der Wartungsmodus ist bereits für die Gruppe $cloudServerGroup aktiviert.")
+                        }
+                        return@anyExecutor
+                    }
 
-                val kickedPlayers = kickPlayers()
+                    maintenanceService.setMaintenanceModeForGroup(cloudServerGroup, true)
 
-                executor.sendText {
-                    appendPrefix()
-                    success("Der Wartungsmodus wurde aktiviert und ")
-                    variableValue(kickedPlayers.size)
-                    success(" Spieler wurden gekickt.")
+                    executor.sendText {
+                        appendPrefix()
+                        success("Der Wartungsmodus wurde für die Gruppe ")
+                        variableValue(cloudServerGroup)
+                        success(" aktiviert.")
+                    }
                 }
             }
         }
     }
+
     literalArgument("disable") {
-        anyExecutor { executor, _ ->
-            if (!plugin.maintenanceMode) {
-                executor.sendText {
-                    appendPrefix()
-                    error("Der Wartungsmodus ist nicht aktiviert.")
+        literalArgument("server") {
+            cloudServerArgument("cloudServer") {
+                anyExecutor { executor, args ->
+                    val cloudServer: CloudServer by args
+
+                    if (!maintenanceService.isMaintenanceEnabled(cloudServer)) {
+                        executor.sendText {
+                            appendPrefix()
+                            error("Der Wartungsmodus ist für den Server ${cloudServer.displayName} nicht aktiviert.")
+                        }
+                        return@anyExecutor
+                    }
+
+                    maintenanceService.setMaintenanceModeForServer(cloudServer, false)
+
+                    executor.sendText {
+                        appendPrefix()
+                        success("Der Wartungsmodus wurde für den Server ")
+                        variableValue(cloudServer.displayName)
+                        success(" deaktiviert.")
+                    }
                 }
-                return@anyExecutor
             }
+        }
+        literalArgument("group") {
+            cloudServerGroupArgument("cloudServerGroup") {
+                anyExecutor { executor, args ->
+                    val cloudServerGroup: String by args
 
-            plugin.maintenanceMode = false
-            plugin.configuration.edit {
-                enabled = false
-            }
+                    if (!maintenanceService.isMaintenanceEnabled(cloudServerGroup)) {
+                        executor.sendText {
+                            appendPrefix()
+                            error("Der Wartungsmodus ist für die Gruppe $cloudServerGroup nicht aktiviert.")
+                        }
+                        return@anyExecutor
+                    }
 
-            executor.sendText {
-                appendPrefix()
-                success("Der Wartungsmodus wurde deaktiviert.")
+                    maintenanceService.setMaintenanceModeForGroup(cloudServerGroup, false)
+
+                    executor.sendText {
+                        appendPrefix()
+                        success("Der Wartungsmodus wurde für die Gruppe ")
+                        variableValue(cloudServerGroup)
+                        success(" deaktiviert.")
+                    }
+                }
             }
         }
     }
+
     literalArgument("status") {
-        anyExecutor { executor, _ ->
-            executor.sendText {
-                appendPrefix()
-                info("Der Wartungsmodus ist aktuell ")
+        literalArgument("server") {
+            cloudServerArgument("cloudServer") {
+                anyExecutor { executor, args ->
+                    val cloudServer: CloudServer by args
 
-                if (plugin.maintenanceMode) {
-                    error("aktiviert.")
-                } else {
-                    success("deaktiviert.")
+                    executor.sendText {
+                        appendPrefix()
+                        info("Der Wartungsmodus für den Server ${cloudServer.displayName} ist aktuell ")
+                        if (maintenanceService.isMaintenanceEnabled(cloudServer)) {
+                            error("aktiviert.")
+                        } else {
+                            success("deaktiviert.")
+                        }
+                    }
+                }
+            }
+        }
+        literalArgument("group") {
+            cloudServerGroupArgument("cloudServerGroup") {
+                anyExecutor { executor, args ->
+                    val cloudServerGroup: String by args
+
+                    executor.sendText {
+                        appendPrefix()
+                        info("Der Wartungsmodus für die Gruppe $cloudServerGroup ist aktuell ")
+                        if (maintenanceService.isMaintenanceEnabled(cloudServerGroup)) {
+                            error("aktiviert.")
+                        } else {
+                            success("deaktiviert.")
+                        }
+                    }
                 }
             }
         }
     }
+
 
     literalArgument("kick") {
-        anyExecutor { executor, _ ->
-            if (!plugin.maintenanceMode) {
-                executor.sendText {
-                    appendPrefix()
-                    error("Der Wartungsmodus ist nicht aktiviert.")
+        literalArgument("server") {
+            cloudServerArgument("cloudServer") {
+                anyExecutor { executor, args ->
+                    val cloudServer: CloudServer by args
+
+                    if (!maintenanceService.isMaintenanceEnabled(cloudServer)) {
+                        executor.sendText {
+                            appendPrefix()
+                            error("Der Wartungsmodus ist für den Server ${cloudServer.displayName} nicht aktiviert.")
+                        }
+                        return@anyExecutor
+                    }
+
+                    executor.sendText {
+                        appendPrefix()
+                        info("Die Cloud-Server Anfrage wurde gesendet...")
+                    }
+
+                    plugin.pluginContainer.launch {
+                        val kickedPlayers = kickPlayers(cloudServer)
+
+                        executor.sendText {
+                            appendPrefix()
+                            success("Es wurden ")
+                            variableValue(kickedPlayers.size)
+                            success(" Spieler vom Server ${cloudServer.displayName} gekickt.")
+                        }
+                    }
                 }
-                return@anyExecutor
             }
+        }
 
-            val kickedPlayers = kickPlayers()
+        literalArgument("group") {
+            cloudServerGroupArgument("cloudServerGroup") {
+                anyExecutor { executor, args ->
+                    val cloudServerGroup: String by args
 
-            executor.sendText {
-                appendPrefix()
-                success("Es wurden ")
-                variableValue(kickedPlayers.size)
-                success(" Spieler gekickt.")
+                    if (!maintenanceService.isMaintenanceEnabled(cloudServerGroup)) {
+                        executor.sendText {
+                            appendPrefix()
+                            error("Der Wartungsmodus ist für die Gruppe $cloudServerGroup nicht aktiviert.")
+                        }
+                        return@anyExecutor
+                    }
+
+                    executor.sendText {
+                        appendPrefix()
+                        info("Die Cloud-Server Anfrage wurde gesendet...")
+                    }
+
+                    plugin.pluginContainer.launch {
+                        val kickedPlayers = kickPlayers(cloudServerGroup)
+
+                        executor.sendText {
+                            appendPrefix()
+                            success("Es wurden ")
+                            variableValue(kickedPlayers.size)
+                            success(" Spieler aus der Gruppe $cloudServerGroup gekickt.")
+                        }
+                    }
+                }
             }
         }
     }
 }
 
-private fun kickPlayers(): List<UUID> {
+private suspend fun kickPlayers(server: CloudServer): List<UUID> {
     val list = mutableListOf<UUID>()
-    proxy.allPlayers.forEach {
+
+    server.users.forEach {
         if (!it.hasPermission(MaintenancePermissions.MAINTENANCE_BYPASS)) {
             it.disconnect(buildText {
                 appendDisconnectMessage("DER SERVER BEFINDET SICH IM WARTUNGSMODUS", {
@@ -147,7 +243,29 @@ private fun kickPlayers(): List<UUID> {
                     append(CommonComponents.RETRY_LATER_FOOTER)
                 })
             })
-            list.add(it.uniqueId)
+            list.add(it.uuid)
+        }
+    }
+    return list
+}
+
+private suspend fun kickPlayers(group: String): List<UUID> {
+    val list = mutableListOf<UUID>()
+
+    CloudClientServerManager.retrieveServersInGroup(group).forEach { svr ->
+        svr.users.forEach {
+            if (!it.hasPermission(MaintenancePermissions.MAINTENANCE_BYPASS)) {
+                it.disconnect(buildText {
+                    appendDisconnectMessage("DER SERVER BEFINDET SICH IM WARTUNGSMODUS", {
+                        variableValue("Es werden nun Wartungen am Server durchgeführt.")
+                        appendNewline()
+                        spacer("Weitere Informationen findest du in unserem Discord.")
+                    }, {
+                        append(CommonComponents.RETRY_LATER_FOOTER)
+                    })
+                })
+                list.add(it.uuid)
+            }
         }
     }
     return list
