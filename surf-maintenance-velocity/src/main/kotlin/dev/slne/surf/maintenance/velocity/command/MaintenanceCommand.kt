@@ -6,7 +6,6 @@ import dev.jorel.commandapi.kotlindsl.anyExecutor
 import dev.jorel.commandapi.kotlindsl.commandTree
 import dev.jorel.commandapi.kotlindsl.literalArgument
 import dev.slne.surf.maintenance.api.InternalMaintenanceApi
-import dev.slne.surf.maintenance.api.bridge.MaintenanceBridge
 import dev.slne.surf.maintenance.core.client.permission.MaintenancePermissions
 import dev.slne.surf.maintenance.velocity.plugin
 import dev.slne.surf.surfapi.core.api.messages.adventure.sendText
@@ -33,7 +32,10 @@ fun maintenanceCommand() = commandTree("maintenance") {
                 return@anyExecutor
             }
 
-            MaintenanceBridge.INSTANCE.setMaintenanceMode(true)
+            plugin.maintenanceMode = true
+            plugin.configuration.edit {
+                enabled = true
+            }
 
             executor.sendText {
                 appendPrefix()
@@ -51,7 +53,10 @@ fun maintenanceCommand() = commandTree("maintenance") {
                 return@anyExecutor
             }
 
-            MaintenanceBridge.INSTANCE.setMaintenanceMode(false)
+            plugin.maintenanceMode = false
+            plugin.configuration.edit {
+                enabled = false
+            }
 
             executor.sendText {
                 appendPrefix()

@@ -8,10 +8,8 @@ data class MaintenanceConfig(
     var enabled: Boolean = false,
     @param:Comment("The MOTD to display when the server is in maintenance mode")
     val maintenanceMotd: String = " <#6fa8dc> CASTCRAFTER.DE </#6fa8dc><gray>- </gray><red>WARTUNGSARBEITEN</red><gray> - </gray><white>[</white><light_purple>1.21.10</light_purple><white>]\n" +
-            "</white><red>     Weitere Informationen findest du im Discord.",
-    @param:Comment("The kick message to display when a player is kicked due to maintenance mode, contains surf formatting")
-    val maintenanceKickMessage: String = "",
+            "</white><#5ACFF5>     Weitere Informationen findest du im Discord.",
     val maxPlayerCount: Int = 0,
     val versionMessageEnabled: Boolean = true,
-    val versionMessage: String = "Wartungsarbeiten"
+    val versionMessage: String = "ᴡᴀʀᴛᴜɴɢѕᴀʀʙᴇɪᴛᴇɴ"
 )
