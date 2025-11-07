@@ -11,21 +11,23 @@ import dev.slne.surf.surfapi.core.api.messages.adventure.buildText
 object ProxyConnectionsListener {
     @Subscribe
     fun onPreConnect(event: LoginEvent) {
-        if (plugin.maintenanceMode) {
-            val player = event.player
-
-            if (!player.hasPermission(MaintenancePermissions.MAINTENANCE_BYPASS)) {
-                event.result = ResultedEvent.ComponentResult.denied(buildText {
-                    CommonComponents.renderDisconnectMessage(
-                        this,
-                        "WARTUNGSARBEITEN",
-                        {
-                            error("Der Server befindet sich derzeit im Wartungsmodus.")
-                        },
-                        false
-                    )
-                })
-            }
+        if (!plugin.maintenanceMode) {
+            return
         }
+
+        val player = event.player
+        if (!player.hasPermission(MaintenancePermissions.MAINTENANCE_BYPASS)) {
+            return
+        }
+
+        event.result = ResultedEvent.ComponentResult.denied(buildText {
+            appendDisconnectMessage("DER SERVER BEFINDET SICH IM WARTUNGSMODUS", {
+                variableValue("Zurzeit werden Wartungen am Server durchgeführt.")
+                appendNewline()
+                spacer("Weitere Informationen findest du in unserem Discord.")
+            }, {
+                append(CommonComponents.RETRY_LATER_FOOTER)
+            })
+        })
     }
 }

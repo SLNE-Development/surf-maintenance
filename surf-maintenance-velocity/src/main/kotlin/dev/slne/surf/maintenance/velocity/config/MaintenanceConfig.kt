@@ -13,3 +13,4 @@ data class MaintenanceConfig(
     val versionMessageEnabled: Boolean = true,
     val versionMessage: String = "ᴡᴀʀᴛᴜɴɢѕᴀʀʙᴇɪᴛᴇɴ"
 )
+ 
