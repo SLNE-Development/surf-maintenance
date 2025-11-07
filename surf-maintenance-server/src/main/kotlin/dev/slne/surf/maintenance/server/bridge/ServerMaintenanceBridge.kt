@@ -10,5 +10,7 @@ import org.springframework.stereotype.Component
 @Component
 class ServerMaintenanceBridge : MaintenanceBridge {
     override fun setMaintenanceMode(enabled: Boolean) =
-        ClientboundMaintenanceStatusSyncPacket(enabled).broadcast()
+        ClientboundMaintenanceStatusSyncPacket(enabled).broadcast().also {
+            println("Broadcasted maintenance mode change to clients (enabled=$enabled)")
+        }
 }
