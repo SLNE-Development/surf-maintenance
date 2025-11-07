@@ -36,6 +36,8 @@ class VelocityMain @Inject constructor(
         maintenanceCommand()
         eventManager.register(this, ProxyPingListener)
         eventManager.register(this, ProxyConnectionsListener)
+
+        maintenanceMode = config.enabled
     }
 
     companion object {

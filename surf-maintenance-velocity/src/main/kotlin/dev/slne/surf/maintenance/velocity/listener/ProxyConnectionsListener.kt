@@ -16,7 +16,7 @@ object ProxyConnectionsListener {
         }
 
         val player = event.player
-        if (!player.hasPermission(MaintenancePermissions.MAINTENANCE_BYPASS)) {
+        if (player.hasPermission(MaintenancePermissions.MAINTENANCE_BYPASS)) {
             return
         }
 
