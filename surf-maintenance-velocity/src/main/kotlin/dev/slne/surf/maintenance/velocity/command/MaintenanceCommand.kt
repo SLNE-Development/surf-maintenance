@@ -7,12 +7,14 @@ import dev.jorel.commandapi.kotlindsl.anyExecutor
 import dev.jorel.commandapi.kotlindsl.commandTree
 import dev.jorel.commandapi.kotlindsl.getValue
 import dev.jorel.commandapi.kotlindsl.literalArgument
+import dev.slne.surf.cloud.api.client.netty.packet.fireAndForget
 import dev.slne.surf.cloud.api.client.server.CloudClientServerManager
 import dev.slne.surf.cloud.api.client.velocity.command.args.cloudServerArgument
 import dev.slne.surf.cloud.api.client.velocity.command.args.cloudServerGroupArgument
 import dev.slne.surf.cloud.api.common.server.CloudServer
 import dev.slne.surf.maintenance.api.InternalMaintenanceApi
 import dev.slne.surf.maintenance.core.client.permission.MaintenancePermissions
+import dev.slne.surf.maintenance.core.netty.packet.serverbound.ServerboundMaintenanceConfigReloadPacket
 import dev.slne.surf.maintenance.velocity.maintenanceService
 import dev.slne.surf.maintenance.velocity.plugin
 import dev.slne.surf.surfapi.core.api.messages.CommonComponents
@@ -224,6 +226,17 @@ fun maintenanceCommand() = commandTree("maintenance") {
                         }
                     }
                 }
+            }
+        }
+    }
+
+    literalArgument("reload") {
+        anyExecutor { executor, _ ->
+            ServerboundMaintenanceConfigReloadPacket().fireAndForget()
+
+            executor.sendText {
+                appendPrefix()
+                success("Die Wartungskonfiguration wurde neu geladen.")
             }
         }
     }
