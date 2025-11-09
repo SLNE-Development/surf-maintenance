@@ -13,7 +13,7 @@ import dev.slne.surf.cloud.api.common.CloudInstance
 import dev.slne.surf.cloud.api.common.startSpringApplication
 import dev.slne.surf.cloud.api.common.sync.SyncSet
 import dev.slne.surf.cloud.api.common.sync.SyncValue
-import dev.slne.surf.maintenance.core.MaintenanceApplication
+import dev.slne.surf.maintenance.MaintenanceApplication
 import dev.slne.surf.maintenance.core.MaintenanceContextHolderImpl
 import dev.slne.surf.maintenance.velocity.command.maintenanceCommand
 import dev.slne.surf.maintenance.velocity.listener.ProxyConnectionsListener

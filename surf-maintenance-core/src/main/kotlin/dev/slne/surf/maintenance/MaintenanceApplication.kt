@@ -1,4 +1,4 @@
-package dev.slne.surf.maintenance.core
+package dev.slne.surf.maintenance
 
 import dev.slne.surf.cloud.api.common.SurfCloudApplication
 
