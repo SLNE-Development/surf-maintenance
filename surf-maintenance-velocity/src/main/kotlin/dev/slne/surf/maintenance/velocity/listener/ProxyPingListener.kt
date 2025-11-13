@@ -14,7 +14,7 @@ object ProxyPingListener {
     fun onProxyPing(event: ProxyPingEvent) {
         val currentServer = CommonCloudServer.current()
 
-        if (!maintenanceService.isMaintenanceEnabled(currentServer.name) && !maintenanceService.isMaintenanceEnabled(
+        if (!maintenanceService.isMaintenanceEnabled(currentServer) && !maintenanceService.isMaintenanceEnabled(
                 currentServer.group
             )
         ) {

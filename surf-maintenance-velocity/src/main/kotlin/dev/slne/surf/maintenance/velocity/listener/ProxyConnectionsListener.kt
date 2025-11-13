@@ -15,7 +15,7 @@ object ProxyConnectionsListener {
     fun onPreConnect(event: LoginEvent) {
         val currentServer = CommonCloudServer.current()
 
-        if (!maintenanceService.isMaintenanceEnabled(currentServer.name) && !maintenanceService.isMaintenanceEnabled(
+        if (!maintenanceService.isMaintenanceEnabled(currentServer) && !maintenanceService.isMaintenanceEnabled(
                 currentServer.group
             )
         ) {
