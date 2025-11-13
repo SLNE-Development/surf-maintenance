@@ -1,2 +1,2 @@
 # surf-maintenance
-Template for surf-cloud applications
+Maintenance plugin for surf-cloud applications
