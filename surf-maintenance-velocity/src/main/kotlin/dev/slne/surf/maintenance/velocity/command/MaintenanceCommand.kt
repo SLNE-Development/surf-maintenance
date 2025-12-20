@@ -27,7 +27,7 @@ fun maintenanceCommand() = commandTree("maintenance") {
 
             executor.sendText {
                 appendPrefix()
-                success("Der Wartungsmodus wurde für die Gruppe aktiviert.")
+                success("Der Wartungsmodus wurde aktiviert.")
             }
         }
     }
