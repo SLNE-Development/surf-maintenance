@@ -6,8 +6,6 @@ import com.velocitypowered.api.event.EventManager
 import com.velocitypowered.api.event.Subscribe
 import com.velocitypowered.api.event.proxy.ProxyInitializeEvent
 import com.velocitypowered.api.event.proxy.ProxyShutdownEvent
-import com.velocitypowered.api.plugin.PluginContainer
-import com.velocitypowered.api.plugin.PluginManager
 import com.velocitypowered.api.plugin.annotation.DataDirectory
 import com.velocitypowered.api.proxy.ProxyServer
 import dev.slne.surf.maintenance.velocity.command.maintenanceCommand
@@ -19,10 +17,8 @@ import java.nio.file.Path
 class VelocityMain @Inject constructor(
     val proxy: ProxyServer,
     @param:DataDirectory val dataPath: Path,
-    val pluginManager: PluginManager,
     val eventManager: EventManager,
-    val pluginContainer: PluginContainer,
-    val suspendingPluginContainer: SuspendingPluginContainer
+    suspendingPluginContainer: SuspendingPluginContainer
 ) {
     var enabled: Boolean = true
 
