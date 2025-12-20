@@ -1,4 +1,4 @@
-package dev.slne.surf.maintenance.core.client.permission
+package dev.slne.surf.maintenance.velocity.util
 
 object MaintenancePermissions {
     const val MAINTENANCE_COMMAND = "surf.maintenance.command"

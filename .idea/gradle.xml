@@ -10,11 +10,6 @@
         <option name="modules">
           <set>
             <option value="$PROJECT_DIR$" />
-            <option value="$PROJECT_DIR$/surf-maintenance-api" />
-            <option value="$PROJECT_DIR$/surf-maintenance-core" />
-            <option value="$PROJECT_DIR$/surf-maintenance-core/surf-maintenance-core-client" />
-            <option value="$PROJECT_DIR$/surf-maintenance-paper" />
-            <option value="$PROJECT_DIR$/surf-maintenance-server" />
             <option value="$PROJECT_DIR$/surf-maintenance-velocity" />
           </set>
         </option>
