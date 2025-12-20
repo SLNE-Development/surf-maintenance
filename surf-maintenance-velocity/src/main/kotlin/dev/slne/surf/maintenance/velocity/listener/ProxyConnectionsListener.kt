@@ -3,6 +3,7 @@ package dev.slne.surf.maintenance.velocity.listener
 import com.velocitypowered.api.event.ResultedEvent
 import com.velocitypowered.api.event.Subscribe
 import com.velocitypowered.api.event.connection.LoginEvent
+import dev.slne.surf.maintenance.velocity.plugin
 import dev.slne.surf.maintenance.velocity.util.MaintenancePermissions
 import dev.slne.surf.surfapi.core.api.messages.CommonComponents
 import dev.slne.surf.surfapi.core.api.messages.adventure.buildText
@@ -11,6 +12,11 @@ object ProxyConnectionsListener {
     @Subscribe
     fun onPreConnect(event: LoginEvent) {
         val player = event.player
+
+        if (!plugin.enabled) {
+            return
+        }
+
         if (player.hasPermission(MaintenancePermissions.MAINTENANCE_BYPASS)) {
             return
         }
