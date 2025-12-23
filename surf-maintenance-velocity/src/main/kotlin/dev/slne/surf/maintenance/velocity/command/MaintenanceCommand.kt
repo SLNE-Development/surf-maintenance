@@ -5,6 +5,8 @@ import dev.jorel.commandapi.kotlindsl.commandTree
 import dev.jorel.commandapi.kotlindsl.literalArgument
 import dev.slne.surf.maintenance.velocity.configuration
 import dev.slne.surf.maintenance.velocity.plugin
+import dev.slne.surf.maintenance.velocity.redis.event.MaintenanceStatusChangeRedisEvent
+import dev.slne.surf.maintenance.velocity.redisApi
 import dev.slne.surf.maintenance.velocity.util.MaintenancePermissions
 import dev.slne.surf.surfapi.core.api.messages.CommonComponents
 import dev.slne.surf.surfapi.core.api.messages.adventure.buildText
@@ -22,6 +24,12 @@ fun maintenanceCommand() = commandTree("maintenance") {
                 }
                 return@anyExecutor
             }
+
+            redisApi.publishEvent(
+                MaintenanceStatusChangeRedisEvent(
+                    enabled = true
+                )
+            )
 
             plugin.enabled = true
 
@@ -41,6 +49,12 @@ fun maintenanceCommand() = commandTree("maintenance") {
                 }
                 return@anyExecutor
             }
+
+            redisApi.publishEvent(
+                MaintenanceStatusChangeRedisEvent(
+                    enabled = false
+                )
+            )
 
             plugin.enabled = false
 

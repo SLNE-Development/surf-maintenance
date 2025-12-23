@@ -33,12 +33,16 @@ class VelocityMain @Inject constructor(
         eventManager.register(this, ProxyPingListener)
         eventManager.register(this, ProxyConnectionsListener)
 
+        redisLoader.connect()
+
         loadFromConfig()
     }
 
     @Subscribe
     fun onProxyShutdown(event: ProxyShutdownEvent) {
         saveToConfig()
+
+        redisLoader.disconnect()
     }
 
     companion object {
