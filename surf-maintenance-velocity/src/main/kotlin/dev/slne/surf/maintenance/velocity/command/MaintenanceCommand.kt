@@ -17,7 +17,7 @@ fun maintenanceCommand() = commandTree("maintenance") {
         anyExecutor { executor, _ ->
             if (plugin.enabled) {
                 executor.sendText {
-                    appendPrefix()
+                    appendErrorPrefix()
                     error("Der Wartungsmodus ist bereits aktiviert.")
                 }
                 return@anyExecutor
@@ -32,7 +32,7 @@ fun maintenanceCommand() = commandTree("maintenance") {
             plugin.enabled = true
 
             executor.sendText {
-                appendPrefix()
+                appendSuccessPrefix()
                 success("Der Wartungsmodus wurde aktiviert.")
             }
         }
@@ -42,7 +42,7 @@ fun maintenanceCommand() = commandTree("maintenance") {
         anyExecutor { executor, _ ->
             if (!plugin.enabled) {
                 executor.sendText {
-                    appendPrefix()
+                    appendErrorPrefix()
                     error("Der Wartungsmodus ist nicht aktiviert.")
                 }
                 return@anyExecutor
@@ -57,7 +57,7 @@ fun maintenanceCommand() = commandTree("maintenance") {
             plugin.enabled = false
 
             executor.sendText {
-                appendPrefix()
+                appendSuccessPrefix()
                 success("Der Wartungsmodus wurde deaktiviert.")
             }
         }
@@ -66,7 +66,7 @@ fun maintenanceCommand() = commandTree("maintenance") {
     literalArgument("status") {
         anyExecutor { executor, _ ->
             executor.sendText {
-                appendPrefix()
+                appendInfoPrefix()
                 info("Der Wartungsmodus ist aktuell ")
                 if (plugin.enabled) {
                     error("aktiviert.")
@@ -82,7 +82,7 @@ fun maintenanceCommand() = commandTree("maintenance") {
         anyExecutor { executor, _ ->
             if (!plugin.enabled) {
                 executor.sendText {
-                    appendPrefix()
+                    appendErrorPrefix()
                     error("Der Wartungsmodus ist nicht aktiviert.")
                 }
                 return@anyExecutor
@@ -91,7 +91,7 @@ fun maintenanceCommand() = commandTree("maintenance") {
             redisApi.publishEvent(MaintenanceKickRedisEvent())
 
             executor.sendText {
-                appendPrefix()
+                appendSuccessPrefix()
                 success("Es wurden ")
                 variableValue("(Ich weiß nicht wie viele Spieler, aber bestimmt ein paar)")
                 success(" Spieler gekickt.")
@@ -104,7 +104,7 @@ fun maintenanceCommand() = commandTree("maintenance") {
             configuration.reload()
 
             executor.sendText {
-                appendPrefix()
+                appendSuccessPrefix()
                 success("Die Wartungskonfiguration wurde neu geladen.")
             }
         }
