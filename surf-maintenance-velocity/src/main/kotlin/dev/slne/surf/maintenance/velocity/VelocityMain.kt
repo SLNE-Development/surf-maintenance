@@ -9,7 +9,7 @@ import com.velocitypowered.api.event.proxy.ProxyShutdownEvent
 import com.velocitypowered.api.plugin.annotation.DataDirectory
 import com.velocitypowered.api.proxy.ProxyServer
 import dev.slne.surf.maintenance.velocity.command.maintenanceCommand
-import dev.slne.surf.maintenance.velocity.config.MaintenanceConfiguration
+import dev.slne.surf.maintenance.velocity.config.MaintenanceConfig
 import dev.slne.surf.maintenance.velocity.listener.ProxyConnectionsListener
 import dev.slne.surf.maintenance.velocity.listener.ProxyPingListener
 import java.nio.file.Path
@@ -50,11 +50,11 @@ class VelocityMain @Inject constructor(
     }
 
     private fun loadFromConfig() {
-        enabled = configuration.config.enabled
+        enabled = MaintenanceConfig.getConfig().enabled
     }
 
     private fun saveToConfig() {
-        configuration.edit {
+        MaintenanceConfig.edit {
             this.enabled = this@VelocityMain.enabled
         }
     }
@@ -62,4 +62,3 @@ class VelocityMain @Inject constructor(
 
 val plugin get() = VelocityMain.instance
 val proxy get() = plugin.proxy
-val configuration = MaintenanceConfiguration()

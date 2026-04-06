@@ -1,12 +1,12 @@
 package dev.slne.surf.maintenance.velocity.redis.listener.event
 
+import dev.slne.surf.api.core.messages.CommonComponents
+import dev.slne.surf.api.core.messages.adventure.buildText
 import dev.slne.surf.maintenance.velocity.plugin
 import dev.slne.surf.maintenance.velocity.redis.event.MaintenanceKickRedisEvent
 import dev.slne.surf.maintenance.velocity.redis.event.MaintenanceStatusChangeRedisEvent
 import dev.slne.surf.maintenance.velocity.util.MaintenancePermissions
 import dev.slne.surf.redis.event.OnRedisEvent
-import dev.slne.surf.surfapi.core.api.messages.CommonComponents
-import dev.slne.surf.surfapi.core.api.messages.adventure.buildText
 
 object MaintenanceRedisListener {
     @OnRedisEvent

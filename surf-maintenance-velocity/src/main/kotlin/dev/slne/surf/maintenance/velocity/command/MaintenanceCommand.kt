@@ -3,13 +3,13 @@ package dev.slne.surf.maintenance.velocity.command
 import dev.jorel.commandapi.kotlindsl.anyExecutor
 import dev.jorel.commandapi.kotlindsl.commandTree
 import dev.jorel.commandapi.kotlindsl.literalArgument
-import dev.slne.surf.maintenance.velocity.configuration
+import dev.slne.surf.api.core.messages.adventure.sendText
+import dev.slne.surf.maintenance.velocity.config.MaintenanceConfig
 import dev.slne.surf.maintenance.velocity.plugin
 import dev.slne.surf.maintenance.velocity.redis.event.MaintenanceKickRedisEvent
 import dev.slne.surf.maintenance.velocity.redis.event.MaintenanceStatusChangeRedisEvent
 import dev.slne.surf.maintenance.velocity.redisApi
 import dev.slne.surf.maintenance.velocity.util.MaintenancePermissions
-import dev.slne.surf.surfapi.core.api.messages.adventure.sendText
 
 fun maintenanceCommand() = commandTree("maintenance") {
     withPermission(MaintenancePermissions.MAINTENANCE_COMMAND)
@@ -23,6 +23,7 @@ fun maintenanceCommand() = commandTree("maintenance") {
                 return@anyExecutor
             }
 
+            @Suppress("DeferredResultUnused")
             redisApi.publishEvent(
                 MaintenanceStatusChangeRedisEvent(
                     enabled = true
@@ -48,6 +49,7 @@ fun maintenanceCommand() = commandTree("maintenance") {
                 return@anyExecutor
             }
 
+            @Suppress("DeferredResultUnused")
             redisApi.publishEvent(
                 MaintenanceStatusChangeRedisEvent(
                     enabled = false
@@ -88,6 +90,7 @@ fun maintenanceCommand() = commandTree("maintenance") {
                 return@anyExecutor
             }
 
+            @Suppress("DeferredResultUnused")
             redisApi.publishEvent(MaintenanceKickRedisEvent())
 
             executor.sendText {
@@ -101,7 +104,7 @@ fun maintenanceCommand() = commandTree("maintenance") {
 
     literalArgument("reload") {
         anyExecutor { executor, _ ->
-            configuration.reload()
+            MaintenanceConfig.reloadFromFile()
 
             executor.sendText {
                 appendSuccessPrefix()

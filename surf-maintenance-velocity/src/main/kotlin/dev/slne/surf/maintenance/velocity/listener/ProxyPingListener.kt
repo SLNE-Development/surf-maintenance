@@ -3,7 +3,7 @@ package dev.slne.surf.maintenance.velocity.listener
 import com.velocitypowered.api.event.Subscribe
 import com.velocitypowered.api.event.proxy.ProxyPingEvent
 import com.velocitypowered.api.proxy.server.ServerPing
-import dev.slne.surf.maintenance.velocity.configuration
+import dev.slne.surf.maintenance.velocity.config.MaintenanceConfig
 import dev.slne.surf.maintenance.velocity.plugin
 import net.kyori.adventure.text.minimessage.MiniMessage
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer
@@ -17,7 +17,7 @@ object ProxyPingListener {
 
         event.ping = event.ping.asBuilder().apply {
             description(
-                MiniMessage.miniMessage().deserialize(configuration.config.maintenanceMotd)
+                MiniMessage.miniMessage().deserialize(MaintenanceConfig.getConfig().maintenanceMotd)
             )
 
             version(
@@ -25,7 +25,7 @@ object ProxyPingListener {
                     1,
                     LegacyComponentSerializer.legacySection().serialize(
                         MiniMessage.miniMessage()
-                            .deserialize(configuration.config.versionMessage)
+                            .deserialize(MaintenanceConfig.getConfig().versionMessage)
                     )
                 )
             )
