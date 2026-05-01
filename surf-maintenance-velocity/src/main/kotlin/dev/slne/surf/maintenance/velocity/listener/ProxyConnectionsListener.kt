@@ -5,7 +5,7 @@ import com.velocitypowered.api.event.Subscribe
 import com.velocitypowered.api.event.connection.LoginEvent
 import dev.slne.surf.api.core.messages.CommonComponents
 import dev.slne.surf.api.core.messages.adventure.buildText
-import dev.slne.surf.maintenance.velocity.plugin
+import dev.slne.surf.maintenance.velocity.MaintenanceService
 import dev.slne.surf.maintenance.velocity.util.MaintenancePermissions
 
 object ProxyConnectionsListener {
@@ -13,7 +13,7 @@ object ProxyConnectionsListener {
     fun onPreConnect(event: LoginEvent) {
         val player = event.player
 
-        if (!plugin.enabled) {
+        if (!MaintenanceService.globalEnabled) {
             return
         }
 

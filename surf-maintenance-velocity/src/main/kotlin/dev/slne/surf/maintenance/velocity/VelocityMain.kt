@@ -12,6 +12,7 @@ import dev.slne.surf.maintenance.velocity.command.maintenanceCommand
 import dev.slne.surf.maintenance.velocity.config.MaintenanceConfig
 import dev.slne.surf.maintenance.velocity.listener.ProxyConnectionsListener
 import dev.slne.surf.maintenance.velocity.listener.ProxyPingListener
+import dev.slne.surf.maintenance.velocity.listener.ServerConnectionListener
 import java.nio.file.Path
 
 class VelocityMain @Inject constructor(
@@ -20,7 +21,7 @@ class VelocityMain @Inject constructor(
     val eventManager: EventManager,
     suspendingPluginContainer: SuspendingPluginContainer
 ) {
-    var enabled: Boolean = true
+    val enabled: Boolean get() = MaintenanceService.globalEnabled
 
     init {
         instance = this
@@ -32,16 +33,24 @@ class VelocityMain @Inject constructor(
         maintenanceCommand()
         eventManager.register(this, ProxyPingListener)
         eventManager.register(this, ProxyConnectionsListener)
+        eventManager.register(this, ServerConnectionListener)
 
-        redisLoader.connect()
+        val config = MaintenanceConfig.getConfig()
+        redisLoader.connect(config.enabled)
 
-        loadFromConfig()
+        if (redisLoader.serverMaintenanceSet.size() == 0 && config.serversInMaintenance.isNotEmpty()) {
+            config.serversInMaintenance.forEach { serverName ->
+                redisLoader.serverMaintenanceSet.add(serverName)
+            }
+        }
+
+        MaintenanceService.initialize(redisLoader.globalState, redisLoader.serverMaintenanceSet)
     }
 
     @Subscribe
     fun onProxyShutdown(event: ProxyShutdownEvent) {
+        MaintenanceService.shutdown()
         saveToConfig()
-
         redisLoader.disconnect()
     }
 
@@ -49,13 +58,10 @@ class VelocityMain @Inject constructor(
         lateinit var instance: VelocityMain
     }
 
-    private fun loadFromConfig() {
-        enabled = MaintenanceConfig.getConfig().enabled
-    }
-
     private fun saveToConfig() {
         MaintenanceConfig.edit {
-            this.enabled = this@VelocityMain.enabled
+            this.enabled = MaintenanceService.globalEnabled
+            this.serversInMaintenance = MaintenanceService.snapshotServerStates().toMutableSet()
         }
     }
 }
