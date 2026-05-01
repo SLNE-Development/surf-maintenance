@@ -97,7 +97,7 @@ fun maintenanceCommand() = commandTree("maintenance") {
                 executor.sendText {
                     appendSuccessPrefix()
                     success("Der globale Wartungs-Countdown wurde für ")
-                    variableValue("${formatTime(countdown)} Sekunden")
+                    variableValue(formatTime(countdown))
                     success(" gestartet.")
                 }
             }
@@ -208,7 +208,7 @@ fun maintenanceCommand() = commandTree("maintenance") {
                     }
                 }
             }
-            
+
             literalArgument("enable") {
                 anyExecutor { executor, args ->
                     val serverName: String by args

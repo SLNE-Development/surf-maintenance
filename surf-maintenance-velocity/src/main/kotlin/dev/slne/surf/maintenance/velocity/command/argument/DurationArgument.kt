@@ -50,7 +50,7 @@ open class DurationArgument(nodeName: String) :
     }
 }
 
-private val regex = Regex("^(?:(\\d+)([smhdw])|infinite)$")
+private val regex = Regex("^(\\d+)([smhdw])$")
 private fun parseDuration(input: String): Duration? {
     val match = regex.matchEntire(input.trim()) ?: return null
 
