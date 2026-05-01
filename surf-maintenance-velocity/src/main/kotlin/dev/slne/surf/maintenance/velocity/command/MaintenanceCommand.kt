@@ -1,22 +1,54 @@
 package dev.slne.surf.maintenance.velocity.command
 
-import dev.jorel.commandapi.arguments.ArgumentSuggestions
 import dev.jorel.commandapi.kotlindsl.anyExecutor
 import dev.jorel.commandapi.kotlindsl.commandTree
-import dev.jorel.commandapi.kotlindsl.integerArgument
+import dev.jorel.commandapi.kotlindsl.getValue
 import dev.jorel.commandapi.kotlindsl.literalArgument
-import dev.jorel.commandapi.kotlindsl.stringArgument
 import dev.slne.surf.api.core.messages.adventure.sendText
 import dev.slne.surf.maintenance.velocity.MaintenanceService
+import dev.slne.surf.maintenance.velocity.command.argument.durationArgument
+import dev.slne.surf.maintenance.velocity.command.argument.proxiedServerArgument
 import dev.slne.surf.maintenance.velocity.config.MaintenanceConfig
+import dev.slne.surf.maintenance.velocity.plugin
 import dev.slne.surf.maintenance.velocity.proxy
 import dev.slne.surf.maintenance.velocity.redis.event.MaintenanceKickRedisEvent
 import dev.slne.surf.maintenance.velocity.redis.event.MaintenanceServerKickRedisEvent
 import dev.slne.surf.maintenance.velocity.redisApi
 import dev.slne.surf.maintenance.velocity.util.MaintenancePermissions
+import net.kyori.adventure.text.format.TextDecoration
+import java.time.Duration
 
 fun maintenanceCommand() = commandTree("maintenance") {
     withPermission(MaintenancePermissions.MAINTENANCE_COMMAND)
+
+    literalArgument("#cancel") {
+        anyExecutor { source, _ ->
+            if (!MaintenanceService.hasActiveCountdown(null)) {
+                source.sendText {
+                    appendErrorPrefix()
+                    error("Es läuft kein globaler Wartungs-Countdown.")
+                }
+                return@anyExecutor
+            }
+
+            MaintenanceService.cancelGlobalCountdown()
+
+            plugin.proxy.allPlayers.forEach {
+                it.sendText {
+                    error("⚠ WARTUNGSARBEITEN", TextDecoration.BOLD)
+                    appendSpace()
+                    darkSpacer("|")
+                    appendSpace()
+                    white("Die Wartungsarbeiten wurden abgebrochen.")
+                }
+            }
+
+            source.sendText {
+                appendSuccessPrefix()
+                success("Der globale Wartungs-Countdown wurde abgebrochen.")
+            }
+        }
+    }
 
     literalArgument("enable") {
         anyExecutor { executor, _ ->
@@ -36,9 +68,9 @@ fun maintenanceCommand() = commandTree("maintenance") {
             }
         }
 
-        integerArgument("countdown", 1, 86400) {
+        durationArgument("countdown") {
             anyExecutor { executor, args ->
-                val seconds = args[0] as Int
+                val countdown: Duration by args
 
                 if (MaintenanceService.globalEnabled) {
                     executor.sendText {
@@ -56,7 +88,7 @@ fun maintenanceCommand() = commandTree("maintenance") {
                     return@anyExecutor
                 }
 
-                MaintenanceService.startGlobalCountdown(seconds) {
+                MaintenanceService.startGlobalCountdown(countdown.seconds) {
                     MaintenanceService.enableGlobal()
                     @Suppress("DeferredResultUnused")
                     redisApi.publishEvent(MaintenanceKickRedisEvent())
@@ -65,7 +97,7 @@ fun maintenanceCommand() = commandTree("maintenance") {
                 executor.sendText {
                     appendSuccessPrefix()
                     success("Der globale Wartungs-Countdown wurde für ")
-                    variableValue("$seconds Sekunden")
+                    variableValue("${formatTime(countdown)} Sekunden")
                     success(" gestartet.")
                 }
             }
@@ -95,7 +127,7 @@ fun maintenanceCommand() = commandTree("maintenance") {
         anyExecutor { executor, _ ->
             executor.sendText {
                 appendInfoPrefix()
-                info("Globaler Wartungsmodus: ")
+                info("Der globale Wartungsmodus ist derzeit ")
                 if (MaintenanceService.globalEnabled) {
                     error("aktiviert")
                 } else {
@@ -141,19 +173,50 @@ fun maintenanceCommand() = commandTree("maintenance") {
     }
 
     literalArgument("server") {
-        stringArgument("serverName") {
-            replaceSuggestions(ArgumentSuggestions.strings { _ ->
-                proxy.allServers.map { it.serverInfo.name }.toTypedArray()
-            })
+        proxiedServerArgument("serverName") {
+            literalArgument("#cancel") {
+                anyExecutor { source, args ->
+                    val serverName: String by args
 
+                    if (!MaintenanceService.hasActiveCountdown(serverName)) {
+                        source.sendText {
+                            appendErrorPrefix()
+                            error("Es läuft kein Wartungs-Countdown für den Server $serverName.")
+                        }
+                        return@anyExecutor
+                    }
+
+                    MaintenanceService.cancelServerCountdown(serverName)
+
+                    plugin.proxy.allPlayers.forEach {
+                        it.sendText {
+                            error("⚠ WARTUNGSARBEITEN", TextDecoration.BOLD)
+                            appendSpace()
+                            darkSpacer("|")
+                            appendSpace()
+                            white("Der Wartungs-Countdown für den Server ")
+                            variableValue(serverName)
+                            white(" wurde abgebrochen.")
+                        }
+                    }
+
+                    source.sendText {
+                        appendSuccessPrefix()
+                        success("Der Wartungs-Countdown für den Server ")
+                        variableValue(serverName)
+                        success(" wurde abgebrochen.")
+                    }
+                }
+            }
+            
             literalArgument("enable") {
                 anyExecutor { executor, args ->
-                    val serverName = args[0] as String
+                    val serverName: String by args
 
                     if (proxy.getServer(serverName).isEmpty) {
                         executor.sendText {
                             appendErrorPrefix()
-                            error("Der Server <yellow>$serverName</yellow> existiert nicht.")
+                            error("Der Server $serverName existiert nicht mehr.")
                         }
                         return@anyExecutor
                     }
@@ -161,7 +224,7 @@ fun maintenanceCommand() = commandTree("maintenance") {
                     if (MaintenanceService.isServerEnabled(serverName)) {
                         executor.sendText {
                             appendErrorPrefix()
-                            error("Der Wartungsmodus für <yellow>$serverName</yellow> ist bereits aktiviert.")
+                            error("Der Wartungsmodus für den Server $serverName ist bereits aktiviert.")
                         }
                         return@anyExecutor
                     }
@@ -170,19 +233,21 @@ fun maintenanceCommand() = commandTree("maintenance") {
 
                     executor.sendText {
                         appendSuccessPrefix()
-                        success("Der Wartungsmodus für <yellow>$serverName</yellow> wurde aktiviert.")
+                        success("Der Wartungsmodus wurde für den Server ")
+                        variableValue(serverName)
+                        success(" aktiviert.")
                     }
                 }
 
-                integerArgument("countdown", 1, 86400) {
+                durationArgument("countdown") {
                     anyExecutor { executor, args ->
-                        val serverName = args[0] as String
-                        val seconds = args[1] as Int
+                        val serverName: String by args
+                        val countdown: Duration by args
 
                         if (proxy.getServer(serverName).isEmpty) {
                             executor.sendText {
                                 appendErrorPrefix()
-                                error("Der Server <yellow>$serverName</yellow> existiert nicht.")
+                                error("Der Server $serverName existiert nicht mehr.")
                             }
                             return@anyExecutor
                         }
@@ -190,7 +255,7 @@ fun maintenanceCommand() = commandTree("maintenance") {
                         if (MaintenanceService.isServerEnabled(serverName)) {
                             executor.sendText {
                                 appendErrorPrefix()
-                                error("Der Wartungsmodus für <yellow>$serverName</yellow> ist bereits aktiviert.")
+                                error("Der Wartungsmodus für den Server $serverName ist bereits aktiviert.")
                             }
                             return@anyExecutor
                         }
@@ -198,12 +263,15 @@ fun maintenanceCommand() = commandTree("maintenance") {
                         if (MaintenanceService.hasActiveCountdown(serverName)) {
                             executor.sendText {
                                 appendErrorPrefix()
-                                error("Für den Server <yellow>$serverName</yellow> läuft bereits ein Wartungs-Countdown.")
+                                error("Für den Server $serverName läuft bereits ein Wartungs-Countdown.")
                             }
                             return@anyExecutor
                         }
 
-                        MaintenanceService.startServerCountdown(serverName, seconds) {
+                        MaintenanceService.startServerCountdown(
+                            serverName,
+                            countdown.seconds
+                        ) {
                             MaintenanceService.enableServer(serverName)
                             @Suppress("DeferredResultUnused")
                             redisApi.publishEvent(MaintenanceServerKickRedisEvent(serverName))
@@ -211,8 +279,10 @@ fun maintenanceCommand() = commandTree("maintenance") {
 
                         executor.sendText {
                             appendSuccessPrefix()
-                            success("Der Wartungs-Countdown für <yellow>$serverName</yellow> wurde für ")
-                            variableValue("$seconds Sekunden")
+                            success("Der Wartungs-Countdown für ")
+                            variableValue(serverName)
+                            success(" wurde für ")
+                            variableValue(formatTime(countdown))
                             success(" gestartet.")
                         }
                     }
@@ -221,12 +291,15 @@ fun maintenanceCommand() = commandTree("maintenance") {
 
             literalArgument("disable") {
                 anyExecutor { executor, args ->
-                    val serverName = args[0] as String
+                    val serverName: String by args
 
-                    if (!MaintenanceService.isServerEnabled(serverName) && !MaintenanceService.hasActiveCountdown(serverName)) {
+                    if (!MaintenanceService.isServerEnabled(serverName) && !MaintenanceService.hasActiveCountdown(
+                            serverName
+                        )
+                    ) {
                         executor.sendText {
                             appendErrorPrefix()
-                            error("Der Wartungsmodus für <yellow>$serverName</yellow> ist nicht aktiviert.")
+                            error("Der Wartungsmodus für $serverName ist nicht aktiviert.")
                         }
                         return@anyExecutor
                     }
@@ -235,18 +308,22 @@ fun maintenanceCommand() = commandTree("maintenance") {
 
                     executor.sendText {
                         appendSuccessPrefix()
-                        success("Der Wartungsmodus für <yellow>$serverName</yellow> wurde deaktiviert.")
+                        success("Der Wartungsmodus für den Server ")
+                        variableValue(serverName)
+                        success(" wurde deaktiviert.")
                     }
                 }
             }
 
             literalArgument("status") {
                 anyExecutor { executor, args ->
-                    val serverName = args[0] as String
+                    val serverName: String by args
 
                     executor.sendText {
                         appendInfoPrefix()
-                        info("Wartungsmodus für <yellow>$serverName</yellow>: ")
+                        info("Der Wartungsmodus für den Server ")
+                        variableValue(serverName)
+                        info(" ist derzeit ")
                         if (MaintenanceService.isServerEnabled(serverName)) {
                             error("aktiviert")
                         } else {
@@ -262,12 +339,12 @@ fun maintenanceCommand() = commandTree("maintenance") {
 
             literalArgument("kick") {
                 anyExecutor { executor, args ->
-                    val serverName = args[0] as String
+                    val serverName: String by args
 
                     if (!MaintenanceService.isServerEnabled(serverName)) {
                         executor.sendText {
                             appendErrorPrefix()
-                            error("Der Wartungsmodus für <yellow>$serverName</yellow> ist nicht aktiviert.")
+                            error("Der Wartungsmodus für den Server $serverName ist nicht aktiviert.")
                         }
                         return@anyExecutor
                     }
@@ -277,10 +354,30 @@ fun maintenanceCommand() = commandTree("maintenance") {
 
                     executor.sendText {
                         appendSuccessPrefix()
-                        success("Alle Spieler auf <yellow>$serverName</yellow> ohne Bypass-Berechtigung wurden gekickt.")
+                        success("Es wurden alle Spieler des Servers ")
+                        variableValue(serverName)
+                        success(" ohne Bypass-Berechtigung gekickt.")
                     }
                 }
             }
         }
     }
+}
+
+
+private fun formatTime(duration: Duration): String {
+    val hours = duration.toHours()
+    val minutes = duration.toMinutesPart().toLong()
+    val secs = duration.toSecondsPart().toLong()
+
+    fun unit(value: Long, singular: String, plural: String) =
+        if (value == 1L) "$value $singular" else "$value $plural"
+
+    return buildString {
+        if (hours > 0) append("${unit(hours, "Stunde", "Stunden")} ")
+        if (minutes > 0) append("${unit(minutes, "Minute", "Minuten")} ")
+        if (secs > 0 || (hours == 0L && minutes == 0L)) {
+            append(unit(secs, "Sekunde", "Sekunden"))
+        }
+    }.trim()
 }

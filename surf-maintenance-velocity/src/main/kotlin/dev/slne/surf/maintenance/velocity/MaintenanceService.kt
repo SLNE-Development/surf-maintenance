@@ -1,9 +1,11 @@
 package dev.slne.surf.maintenance.velocity
 
+import dev.slne.surf.api.core.messages.adventure.sendText
 import dev.slne.surf.redis.sync.set.SyncSet
 import dev.slne.surf.redis.sync.value.SyncValue
 import kotlinx.coroutines.*
-import net.kyori.adventure.text.minimessage.MiniMessage
+import net.kyori.adventure.text.format.TextDecoration
+import kotlin.time.Duration.Companion.seconds
 
 object MaintenanceService {
     private lateinit var _globalState: SyncValue<Boolean>
@@ -41,18 +43,25 @@ object MaintenanceService {
         _serverMaintenanceSet.remove(serverName)
     }
 
-    fun startGlobalCountdown(seconds: Int, onEnable: suspend () -> Unit) {
+    fun cancelGlobalCountdown() = cancelCountdown(null)
+    fun cancelServerCountdown(serverName: String) = cancelCountdown(serverName)
+
+    fun startGlobalCountdown(seconds: Long, onEnable: suspend () -> Unit) {
         cancelCountdown(null)
         countdownJobs[null] = scope.launch {
             runCountdown(seconds, null, onEnable)
         }
+
+        broadcastCountdownMessage(seconds, null)
     }
 
-    fun startServerCountdown(serverName: String, seconds: Int, onEnable: suspend () -> Unit) {
+    fun startServerCountdown(serverName: String, seconds: Long, onEnable: suspend () -> Unit) {
         cancelCountdown(serverName)
         countdownJobs[serverName] = scope.launch {
             runCountdown(seconds, serverName, onEnable)
         }
+
+        broadcastCountdownMessage(seconds, serverName)
     }
 
     fun cancelCountdown(key: String?) {
@@ -67,34 +76,69 @@ object MaintenanceService {
         scope.cancel()
     }
 
-    private suspend fun runCountdown(seconds: Int, key: String?, onEnable: suspend () -> Unit) {
-        val milestones = setOf(1800, 900, 600, 300, 120, 60, 30, 20, 10, 5, 4, 3, 2, 1)
+    private suspend fun runCountdown(seconds: Long, key: String?, onEnable: suspend () -> Unit) {
         var remaining = seconds
 
         while (remaining > 0) {
-            ensureActive()
-            if (remaining in milestones) {
+            if (shouldNotify(remaining, seconds)) {
                 broadcastCountdownMessage(remaining, key)
             }
-            delay(1000L)
+            delay(1.seconds)
             remaining--
         }
 
         onEnable()
     }
 
-    private fun broadcastCountdownMessage(seconds: Int, key: String?) {
-        val timeText = formatTime(seconds)
-        val serverText = if (key != null) "für <yellow>$key</yellow> " else ""
-        val message = MiniMessage.miniMessage().deserialize(
-            "<red><b>⚠ WARTUNG</b></red> <dark_gray>|</dark_gray> <white>Die Wartung ${serverText}startet in <yellow>$timeText</yellow>.</white>"
-        )
-        plugin.proxy.allPlayers.forEach { it.sendMessage(message) }
+    private fun shouldNotify(remainingSeconds: Long, totalSeconds: Long): Boolean {
+        val thresholds = mutableSetOf<Long>()
+
+        var current = totalSeconds
+        while (current > 600) {
+            current /= 2
+            thresholds.add(current)
+        }
+
+        val finerSteps = listOf(300L, 180L, 120L, 60L, 30L, 15L, 10L, 5L, 3L, 2L, 1L)
+        thresholds.addAll(finerSteps.filter { it < totalSeconds })
+
+        return remainingSeconds in thresholds
     }
 
-    private fun formatTime(seconds: Int): String = when {
-        seconds >= 3600 -> "${seconds / 3600} Stunde(n)"
-        seconds >= 60 -> "${seconds / 60} Minute(n)"
-        else -> "$seconds Sekunde(n)"
+    fun broadcastCountdownMessage(seconds: Long, key: String?) {
+        plugin.proxy.allPlayers.forEach {
+            it.sendText {
+                error("⚠ WARTUNGSARBEITEN", TextDecoration.BOLD)
+                appendSpace()
+                darkSpacer("|")
+                appendSpace()
+                white("Die Wartungsarbeiten ")
+                if (key != null) {
+                    white("für den Server ")
+                    variableValue(key)
+                    appendSpace()
+                }
+                white("starten in ")
+                variableValue(formatTime(seconds))
+                white(".")
+            }
+        }
+    }
+
+    private fun formatTime(seconds: Long): String {
+        val hours = seconds / 3600
+        val minutes = (seconds % 3600) / 60
+        val secs = seconds % 60
+
+        fun unit(value: Long, singular: String, plural: String) =
+            if (value == 1L) "$value $singular" else "$value $plural"
+
+        return buildString {
+            if (hours > 0) append("${unit(hours, "Stunde", "Stunden")} ")
+            if (minutes > 0) append("${unit(minutes, "Minute", "Minuten")} ")
+            if (secs > 0 || (hours == 0L && minutes == 0L)) {
+                append(unit(secs, "Sekunde", "Sekunden"))
+            }
+        }.trim()
     }
 }

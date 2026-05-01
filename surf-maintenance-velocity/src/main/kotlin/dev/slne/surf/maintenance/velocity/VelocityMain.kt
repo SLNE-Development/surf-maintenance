@@ -31,6 +31,7 @@ class VelocityMain @Inject constructor(
     @Subscribe
     fun onProxyInitialize(event: ProxyInitializeEvent) {
         maintenanceCommand()
+
         eventManager.register(this, ProxyPingListener)
         eventManager.register(this, ProxyConnectionsListener)
         eventManager.register(this, ServerConnectionListener)
