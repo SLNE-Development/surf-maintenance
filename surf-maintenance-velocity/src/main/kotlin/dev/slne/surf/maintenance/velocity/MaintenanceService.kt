@@ -61,7 +61,7 @@ object MaintenanceService {
 
     fun hasActiveCountdown(key: String?): Boolean = countdownJobs[key]?.isActive == true
 
-    fun snapshotServerStates(): Set<String> = _serverMaintenanceSet.snapshot().toHashSet()
+    fun snapshotServerStates(): Set<String> = _serverMaintenanceSet.snapshot()
 
     fun shutdown() {
         scope.cancel()
