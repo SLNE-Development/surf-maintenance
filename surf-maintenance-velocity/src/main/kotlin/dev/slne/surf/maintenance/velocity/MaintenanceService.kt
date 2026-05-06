@@ -1,6 +1,8 @@
 package dev.slne.surf.maintenance.velocity
 
-import dev.slne.surf.api.core.messages.adventure.sendText
+import dev.slne.surf.api.core.messages.adventure.buildText
+import dev.slne.surf.api.core.messages.builder.SurfComponentBuilder
+import dev.slne.surf.maintenance.velocity.redis.event.MaintenanceMessageRedisEvent
 import dev.slne.surf.redis.sync.set.SyncSet
 import dev.slne.surf.redis.sync.value.SyncValue
 import kotlinx.coroutines.*
@@ -106,22 +108,20 @@ object MaintenanceService {
     }
 
     fun broadcastCountdownMessage(seconds: Long, key: String?) {
-        plugin.proxy.allPlayers.forEach {
-            it.sendText {
-                error("⚠ WARTUNGSARBEITEN", TextDecoration.BOLD)
+        broadcastMaintenanceMessage {
+            error("⚠ WARTUNGSARBEITEN", TextDecoration.BOLD)
+            appendSpace()
+            darkSpacer("|")
+            appendSpace()
+            white("Die Wartungsarbeiten ")
+            if (key != null) {
+                white("für den Server ")
+                variableValue(key)
                 appendSpace()
-                darkSpacer("|")
-                appendSpace()
-                white("Die Wartungsarbeiten ")
-                if (key != null) {
-                    white("für den Server ")
-                    variableValue(key)
-                    appendSpace()
-                }
-                white("starten in ")
-                variableValue(formatTime(seconds))
-                white(".")
             }
+            white("starten in ")
+            variableValue(formatTime(seconds))
+            white(".")
         }
     }
 
@@ -140,5 +140,10 @@ object MaintenanceService {
                 append(unit(secs, "Sekunde", "Sekunden"))
             }
         }.trim()
+    }
+
+
+    fun broadcastMaintenanceMessage(builder: SurfComponentBuilder.() -> Unit) {
+        redisApi.publishEvent(MaintenanceMessageRedisEvent(buildText(builder)))
     }
 }

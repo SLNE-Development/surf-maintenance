@@ -6,10 +6,10 @@ import dev.jorel.commandapi.kotlindsl.getValue
 import dev.jorel.commandapi.kotlindsl.literalArgument
 import dev.slne.surf.api.core.messages.adventure.sendText
 import dev.slne.surf.maintenance.velocity.MaintenanceService
+import dev.slne.surf.maintenance.velocity.MaintenanceService.broadcastMaintenanceMessage
 import dev.slne.surf.maintenance.velocity.command.argument.durationArgument
 import dev.slne.surf.maintenance.velocity.command.argument.proxiedServerArgument
 import dev.slne.surf.maintenance.velocity.config.MaintenanceConfig
-import dev.slne.surf.maintenance.velocity.plugin
 import dev.slne.surf.maintenance.velocity.proxy
 import dev.slne.surf.maintenance.velocity.redis.event.MaintenanceKickRedisEvent
 import dev.slne.surf.maintenance.velocity.redis.event.MaintenanceServerKickRedisEvent
@@ -33,14 +33,12 @@ fun maintenanceCommand() = commandTree("maintenance") {
 
             MaintenanceService.cancelGlobalCountdown()
 
-            plugin.proxy.allPlayers.forEach {
-                it.sendText {
-                    error("⚠ WARTUNGSARBEITEN", TextDecoration.BOLD)
-                    appendSpace()
-                    darkSpacer("|")
-                    appendSpace()
-                    white("Die Wartungsarbeiten wurden abgebrochen.")
-                }
+            broadcastMaintenanceMessage {
+                error("⚠ WARTUNGSARBEITEN", TextDecoration.BOLD)
+                appendSpace()
+                darkSpacer("|")
+                appendSpace()
+                white("Die Wartungsarbeiten wurden abgebrochen.")
             }
 
             source.sendText {
@@ -188,16 +186,14 @@ fun maintenanceCommand() = commandTree("maintenance") {
 
                     MaintenanceService.cancelServerCountdown(serverName)
 
-                    plugin.proxy.allPlayers.forEach {
-                        it.sendText {
-                            error("⚠ WARTUNGSARBEITEN", TextDecoration.BOLD)
-                            appendSpace()
-                            darkSpacer("|")
-                            appendSpace()
-                            white("Der Wartungs-Countdown für den Server ")
-                            variableValue(serverName)
-                            white(" wurde abgebrochen.")
-                        }
+                    broadcastMaintenanceMessage {
+                        error("⚠ WARTUNGSARBEITEN", TextDecoration.BOLD)
+                        appendSpace()
+                        darkSpacer("|")
+                        appendSpace()
+                        white("Der Wartungs-Countdown für den Server ")
+                        variableValue(serverName)
+                        white(" wurde abgebrochen.")
                     }
 
                     source.sendText {
